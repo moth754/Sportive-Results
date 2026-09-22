@@ -1,0 +1,39 @@
+#!/bin/sh
+# Refuse commits that would publish credentials or local race data.
+# install.sh enables this hook with:  git config core.hooksPath .githooks
+
+fail=0
+
+bad_files=$(git diff --cached --name-only --diff-filter=ACMR |
+    grep -E '(^|/)(Config\.csv|SMS\.csv|\.env)$|^data/|\.db(-wal|-shm|-journal)?$' || true)
+if [ -n "$bad_files" ]; then
+    echo "pre-commit: these files hold secrets or local race data and must not be committed:"
+    echo "$bad_files" | sed 's/^/    /'
+    fail=1
+fi
+
+# Twilio-shaped SIDs/keys (AC/MG/SK followed by 32 hex characters).
+added=$(git diff --cached -U0 --diff-filter=ACMR | grep -E '^\+' | grep -Ev '^\+\+\+ ')
+if printf '%s\n' "$added" | grep -Eq '(AC|MG|SK)[0-9a-f]{32}'; then
+    echo "pre-commit: staged changes contain what looks like a Twilio SID or API key."
+    fail=1
+fi
+
+# The actual values from the old Config.csv (if it is still here), whatever their shape.
+config=legacy/Config.csv
+if [ -f "$config" ]; then
+    cut -d, -f2- "$config" | tr -d '\r' | awk 'length($0) >= 6' | sort -u |
+    while IFS= read -r value; do
+        [ -z "$value" ] && continue
+        if printf '%s\n' "$added" | grep -Fq -- "$value"; then
+            echo "pre-commit: staged changes contain a value from $config (starts \"$(printf '%s' "$value" | cut -c1-3)...\")."
+            exit 1
+        fi
+    done || fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+    echo "Commit blocked. Unstage the files/lines above (git restore --staged <file>)."
+    exit 1
+fi
+exit 0

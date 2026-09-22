@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<noscript><meta http-equiv="refresh" content="{{ refresh_seconds }}"></noscript>
+<title>{{ event_name }} results</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#16181d;--muted:#5d6470;--line:#e2e5ea;--accent:#1f5fbf;--stripe:#f8f9fb}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--card:#1a1d22;--text:#e8eaee;--muted:#9aa1ad;--line:#2b3038;--accent:#7fb0ff;--stripe:#1f2329}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line)}
+.head{max-width:960px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center}
+.head .logo{display:flex}
+.head .logo.right{justify-content:flex-end}
+.head img{display:block;max-height:64px;max-width:180px;width:auto;height:auto}
+.title{text-align:center}
+h1{margin:0;font-size:1.55rem;line-height:1.2}
+.sub{color:var(--muted);font-size:.9rem;margin-top:4px}
+main{max-width:960px;margin:0 auto;padding:16px}
+.search{width:100%;padding:10px 12px;font:inherit;font-size:1rem;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);margin-bottom:18px}
+.distance{margin-bottom:28px}
+.distance h2{font-size:1.2rem;margin:0 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.distance h2 span{font-size:.85rem;font-weight:400;color:var(--muted);white-space:nowrap}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:6px 0;overflow:hidden}
+summary{cursor:pointer;padding:10px 12px;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";color:var(--muted);width:1em}
+details[open]>summary::before{content:"\25BE"}
+.s-title{font-weight:600;flex:1 1 auto}
+.s-meta{color:var(--muted);font-size:.85rem}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:6px 12px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.pos{width:3.2em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.time{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.medal{white-space:nowrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.8rem;font-weight:700}
+.pill.gold{background:#f1c232;color:#3b2c00}.pill.silver{background:#d3d8de;color:#1f2429}
+.pill.bronze{background:#d38c4d;color:#2a1505}.pill.finisher{background:#dce8fb;color:#173a6b}
+tbody tr:nth-child(even){background:var(--stripe)}
+.hidden{display:none}
+.empty{text-align:center;color:var(--muted);padding:48px 0}
+footer{max-width:960px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:.85rem;text-align:center}
+@media (max-width:640px){
+  .head{grid-template-columns:1fr 1fr;gap:10px}
+  .title{grid-column:1/-1;grid-row:2}
+  .head img{max-height:44px;max-width:140px}
+  th,td{padding:6px 8px}
+  h1{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div class="logo">{% if organiser_logo %}<img src="{{ organiser_logo }}" alt="Race organiser">{% endif %}</div>
+    <div class="title">
+      <h1>{{ event_name }}</h1>
+      <div class="sub">{% if event_date %}{{ event_date }} · {% endif %}{{ finishers }} finisher{{ "s" if finishers != 1 }} · Updated {{ updated }}</div>
+    </div>
+    <div class="logo right">{% if timing_logo %}<img src="{{ timing_logo }}" alt="{{ timing_name or 'Timing company' }}">{% endif %}</div>
+  </div>
+</header>
+<main>
+{% if distances %}
+  <input class="search" type="search" id="q" placeholder="Find a name" aria-label="Find a name" hidden>
+  {% for d in distances %}
+  <section class="distance" id="{{ d.id }}">
+    <h2>{{ d.name }} <span>{{ d.count }} finisher{{ "s" if d.count != 1 }}</span></h2>
+    {% for s in d.sections %}
+    <details id="{{ s.id }}">
+      <summary><span class="s-title">{{ s.title }}</span><span class="s-meta">{{ s.count }} · 1st {{ s.winner }} {{ s.winning_time }}</span></summary>
+      <table>
+        <thead><tr><th class="pos">Pos</th><th>Name</th>{% if s.kind != "category" %}<th>Category</th>{% endif %}{% if s.kind == "overall" %}<th>Gender</th>{% endif %}<th class="time">Time</th>{% if with_medals %}<th class="medal">Medal</th>{% endif %}</tr></thead>
+        <tbody>
+{% for r in s.rows %}          <tr><td class="pos">{{ r.pos }}</td><td class="name">{{ r.name }}</td>{% if s.kind != "category" %}<td>{{ r.category }}</td>{% endif %}{% if s.kind == "overall" %}<td>{{ r.gender }}</td>{% endif %}<td class="time">{{ r.time }}</td>{% if with_medals %}<td class="medal">{% if r.medal %}<span class="pill {{ r.medal|lower }}">{{ r.medal }}</span>{% endif %}</td>{% endif %}</tr>
+{% endfor %}        </tbody>
+      </table>
+    </details>
+    {% endfor %}
+  </section>
+  {% endfor %}
+{% else %}
+  <p class="empty">No finishers yet. This page updates automatically.</p>
+{% endif %}
+</main>
+<footer>{% if timing_name %}Timing by {{ timing_name }} · {% endif %}Last updated {{ updated }}, {{ updated_date }}</footer>
+<script>
+(function () {
+  var KEY = "rr:" + document.title, q = document.getElementById("q");
+  var sections = [].slice.call(document.querySelectorAll("details"));
+  var defaults = sections.map(function (d) { return d.open; });
+  function filter() {
+    var term = q.value.trim().toLowerCase();
+    sections.forEach(function (d, i) {
+      var any = false;
+      [].forEach.call(d.querySelectorAll("tbody tr"), function (tr) {
+        var hit = !term || tr.querySelector(".name").textContent.toLowerCase().indexOf(term) !== -1;
+        tr.classList.toggle("hidden", !hit);
+        any = any || hit;
+      });
+      d.classList.toggle("hidden", !!term && !any);
+      d.open = term ? any : defaults[i];
+    });
+  }
+  function save() {
+    try {
+      sessionStorage.setItem(KEY, JSON.stringify({
+        q: q ? q.value : "", y: window.scrollY,
+        open: sections.filter(function (d) { return d.open; }).map(function (d) { return d.id; })
+      }));
+    } catch (e) {}
+  }
+  if (q) {
+    q.hidden = false;
+    q.addEventListener("input", filter);
+  }
+  try {
+    var saved = JSON.parse(sessionStorage.getItem(KEY) || "null");
+    if (saved) {
+      sections.forEach(function (d, i) { d.open = saved.open.indexOf(d.id) !== -1; defaults[i] = d.open; });
+      if (q && saved.q) { q.value = saved.q; filter(); }
+      window.scrollTo(0, saved.y || 0);
+    }
+  } catch (e) {}
+  setTimeout(function () { save(); location.reload(); }, {{ refresh_seconds }} * 1000);
+})();
+</script>
+</body>
+</html>

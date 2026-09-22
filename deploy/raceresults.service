@@ -1,0 +1,20 @@
+# Template used by install.sh (the @...@ values are filled in there).
+[Unit]
+Description=Race Results (live Webscorer results, medals, texts, FTP)
+After=network.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+WorkingDirectory=@APP_DIR@
+Environment=PYTHONUNBUFFERED=1
+Environment=RACERESULTS_PORT=@PORT@
+Environment=RACERESULTS_SYSTEMCTL=@SYSTEMCTL@
+ExecStart=@APP_DIR@/.venv/bin/python -m raceresults
+Restart=on-failure
+RestartSec=5
+# NoNewPrivileges is deliberately not set: the Shutdown button uses sudo to power off.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Results · Log in</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<main style="max-width:380px;padding-top:12vh">
+  <form method="post" class="card card-pad stack">
+    <h1 style="font-size:20px">Race Results</h1>
+    <label class="field"><span>Password</span><input type="password" name="password" autofocus autocomplete="current-password"></label>
+    {% if error %}<div class="notice err">{{ error }}</div>{% endif %}
+    <button class="btn primary" type="submit" style="width:100%">Log in</button>
+  </form>
+</main>
+</body>
+</html>

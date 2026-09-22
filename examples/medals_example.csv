@@ -1,0 +1,8 @@
+Distance,Category,Gender,Gold,Silver,Bronze,Finisher
+Sample Sportive (Long),Senior,Open,5:00:00,6:00:00,7:30:00,24:00:00
+Sample Sportive (Long),Vet 40,Open,5:10:00,6:10:00,7:40:00,24:00:00
+Sample Sportive (Long),Vet 50,Open,5:25:00,6:25:00,7:55:00,24:00:00
+Sample Sportive (Long),Senior,Female,5:40:00,6:40:00,8:10:00,24:00:00
+Sample Sportive (Long),Vet 40,Female,5:50:00,6:50:00,8:20:00,24:00:00
+Sample Sportive (Short),Senior,Open,2:30:00,3:00:00,,24:00:00
+Sample Sportive (Short),Senior,Female,2:50:00,3:20:00,,24:00:00

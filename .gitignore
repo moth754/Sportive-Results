@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------
+# Secrets and local race data: NEVER commit these.
+# All credentials (Webscorer, Twilio, FTP) live in data/raceresults.db
+# ---------------------------------------------------------------
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.log
+.env
+Config.csv
+SMS.csv
+
+# The old scripts hard-code the Webscorer API ID and a personal path; keep them local.
+legacy/
+
+# Race CSVs (medal standards, logs, exports) are event data, not code.
+*.csv
+!examples/*.csv
+!tests/fixtures/*.csv
+
+# ---------------------------------------------------------------
+# Python / tooling
+# ---------------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+
+# ---------------------------------------------------------------
+# OS / editor
+# ---------------------------------------------------------------
+.DS_Store
+.claude/
+.vscode/

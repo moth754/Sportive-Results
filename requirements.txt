@@ -1,0 +1,8 @@
+flask>=3.0,<4
+waitress>=3.0,<4
+requests>=2.31,<3
+psutil>=5.9,<8
+pillow>=10.0,<13
+phonenumbers>=8.13,<10
+# SFTP uploads only (imported lazily when SFTP is selected)
+paramiko>=3.4,<5

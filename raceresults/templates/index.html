@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Results</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='12' fill='%231d5fc4'/%3E%3Crect x='13' y='1' width='6' height='5' rx='1' fill='%231d5fc4'/%3E%3Cpath d='M16 18V10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}-{{ boot }}">
+</head>
+<body>
+<div id="offline" class="offline-banner" hidden>Lost contact with the Race Results app. Retrying…</div>
+
+<header class="topbar" id="topbar">
+  <div class="brand">
+    <strong>Race Results</strong>
+    <span id="hdr-event">No event selected</span>
+  </div>
+
+  <label class="sms-toggle" id="sms-toggle" title="Send result texts to finishers">
+    <span class="switch"><input type="checkbox" id="sms-switch" aria-label="Text messages"><span class="track"></span></span>
+    <span class="label" id="sms-label">SMS OFF</span>
+    <span class="counts" id="sms-counts"></span>
+  </label>
+
+  <label class="sms-toggle ftp-toggle" id="ftp-toggle" title="Upload the results page to the website automatically">
+    <span class="switch"><input type="checkbox" id="ftp-switch" aria-label="Website upload"><span class="track"></span></span>
+    <span class="label" id="ftp-label">FTP OFF</span>
+    <span class="counts" id="ftp-counts"></span>
+  </label>
+
+  <div class="meters" aria-label="System">
+    <div class="meter" title="Processor load"><span>CPU</span><span class="bar"><i id="m-cpu-bar"></i></span><b id="m-cpu">–</b></div>
+    <div class="meter" id="m-ram-wrap" title="Memory in use"><span>RAM</span><span class="bar"><i id="m-ram-bar"></i></span><b id="m-ram">–</b></div>
+    <div class="meter" id="m-disk-wrap" title="Storage in use"><span>Disk</span><span class="bar"><i id="m-disk-bar"></i></span><b id="m-disk">–</b></div>
+    <div class="meter" title="Network download / upload"><span>Net</span><b id="m-net">–</b></div>
+    <div class="meter" id="m-sms-wrap" title="Result texts sent for this event"><span>Texts</span><b id="m-sms">0</b></div>
+    <div class="meter" id="m-temp-wrap" title="Processor temperature" hidden><span>Temp</span><b id="m-temp">–</b></div>
+  </div>
+
+  <div class="statuses">
+    <div class="status" id="st-webscorer" title="Webscorer"><span class="dot"></span><span>Webscorer <b>–</b></span></div>
+    <div class="status" id="st-ftp" title="Results website upload"><span class="dot"></span><span>FTP <b>–</b></span></div>
+  </div>
+
+  <button class="btn btn-shutdown" id="btn-shutdown" type="button">Shutdown</button>
+</header>
+
+<nav class="tabs" role="tablist" id="tabs">
+  <button class="tab" role="tab" data-tab="results" aria-selected="true">Results</button>
+  <button class="tab" role="tab" data-tab="medals" aria-selected="false">Medal setup</button>
+  <button class="tab" role="tab" data-tab="config" aria-selected="false">Configuration</button>
+</nav>
+
+<main>
+  <!-- ======================================================== RESULTS -->
+  <section id="tab-results" class="tab-panel" role="tabpanel">
+    <div class="card event-bar">
+      <select id="event-select" aria-label="Event"></select>
+      <button class="btn" type="button" id="btn-event-new">New event</button>
+      <button class="btn" type="button" id="btn-event-edit">Edit event</button>
+      <a class="btn" id="btn-export" href="#" download>Export CSV</a>
+      <button class="btn danger-outline" type="button" id="btn-event-delete">Delete</button>
+      <label class="check live-toggle" title="Fetch new results from Webscorer every few seconds">
+        <input type="checkbox" id="polling-switch"> Live updates
+      </label>
+      <div class="event-meta" id="event-meta"></div>
+    </div>
+
+    <div id="results-notices" class="stack" style="margin-top:12px"></div>
+
+    <div class="tools">
+      <input type="search" class="search" id="search" placeholder="Search bib or name" autocomplete="off" aria-label="Search bib or name">
+      <select id="filter-distance" aria-label="Distance"><option value="">All distances</option></select>
+      <label class="check"><input type="checkbox" id="show-all"> Show entrants who haven't finished</label>
+      <label class="check" title="Results changed here that still need correcting in Webscorer"><input type="checkbox" id="edited-only"> Edited only</label>
+      <span class="count" id="results-count"></span>
+    </div>
+
+    <div class="table-wrap" id="results-wrap">
+      <table class="data results" id="results-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="empty-state card" id="results-empty" hidden></div>
+
+    <details class="card panel" id="sms-panel">
+      <summary>Text messages <span class="muted small" id="sms-panel-counts"></span></summary>
+      <div class="panel-body">
+        <div class="table-wrap" style="box-shadow:none">
+          <table class="data" id="sms-table">
+            <thead><tr><th>Time</th><th>Bib</th><th>To</th><th>Message</th><th>Status</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <details class="card panel" id="activity-panel">
+      <summary>Activity</summary>
+      <div class="panel-body"><ol class="activity" id="activity"></ol></div>
+    </details>
+  </section>
+
+  <!-- ======================================================== MEDAL SETUP -->
+  <section id="tab-medals" class="tab-panel" role="tabpanel" hidden>
+    <div class="medal-layout">
+      <aside class="card">
+        <div class="card-pad" style="padding-bottom:4px"><h2>Medal configurations</h2>
+          <p class="hint">Saved separately from events, so they can be reused and adjusted for future races.</p></div>
+        <ul class="config-list" id="config-list"></ul>
+        <div class="list-actions">
+          <button class="btn" type="button" id="btn-config-new">New</button>
+          <label class="btn file-btn">Import CSV<input type="file" id="config-import" accept=".csv,text/csv"></label>
+        </div>
+        <p class="hint card-pad" style="padding-top:0">CSV columns: Distance, Category, Gender, Gold, Silver, Bronze, Finisher, with times as H:MM:SS. A blank time means that medal isn't awarded.</p>
+      </aside>
+
+      <section class="card" id="config-editor" hidden>
+        <div class="editor-head">
+          <input class="name-input" id="config-name" aria-label="Configuration name">
+          <button class="btn primary" type="button" id="btn-config-save">Save</button>
+          <button class="btn" type="button" id="btn-config-duplicate">Duplicate</button>
+          <a class="btn" id="btn-config-export" href="#" download>Export CSV</a>
+          <button class="btn danger-outline" type="button" id="btn-config-delete">Delete</button>
+        </div>
+        <div id="config-banner" class="card-pad" hidden style="padding-bottom:0"></div>
+        <div class="editor-tools">
+          <input type="search" id="config-filter" placeholder="Filter rows" aria-label="Filter rows">
+          <button class="btn" type="button" id="btn-config-add">Add row</button>
+          <button class="btn" type="button" id="btn-config-missing">Add missing combinations from active event</button>
+          <span class="spacer"></span>
+          <span class="muted small" id="config-rowcount"></span>
+          <span class="dirty small" id="config-dirty" hidden>Unsaved changes</span>
+        </div>
+        <div class="grid-wrap">
+          <table class="data grid" id="config-grid">
+            <thead><tr><th>Distance</th><th>Category</th><th>Gender</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Finisher</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <ul class="problems" id="config-problems" hidden></ul>
+      </section>
+
+      <section class="card empty-state" id="config-empty">
+        <h2>No medal configuration selected</h2>
+        <p>Import your medal CSV or create a new configuration to get started.</p>
+      </section>
+    </div>
+  </section>
+
+  <!-- ======================================================== CONFIGURATION -->
+  <section id="tab-config" class="tab-panel" role="tabpanel" hidden>
+    <form id="config-form" autocomplete="off" novalidate>
+      <div class="config-grid">
+        <fieldset class="card">
+          <legend>Webscorer</legend>
+          <div class="fields">
+            <label class="field"><span>API ID</span><input name="webscorer_api_id" inputmode="numeric"></label>
+            <label class="field"><span>API token</span><input name="webscorer_token" type="password" data-secret autocomplete="new-password">
+              <div class="secret-state" data-for="webscorer_token"></div></label>
+            <label class="field"><span>Check for new results every (seconds)</span><input name="refresh_seconds" type="number" min="5" max="3600"></label>
+            <p class="hint">The Webscorer race ID is set per event (Results tab › New event).</p>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Text messages (Twilio)</legend>
+          <div class="fields">
+            <p class="hint" style="margin:0">Texts are switched on and off with the SMS switch at the top of the page. It always starts OFF.</p>
+            <label class="field"><span>Account SID</span><input name="twilio_account_sid"></label>
+            <label class="field"><span>Auth token</span><input name="twilio_auth_token" type="password" data-secret autocomplete="new-password">
+              <div class="secret-state" data-for="twilio_auth_token"></div></label>
+            <div class="two">
+              <label class="field"><span>Messaging Service SID</span><input name="twilio_messaging_service_sid"></label>
+              <label class="field"><span>From number</span><input name="twilio_from"><small>Only used without a Messaging Service</small></label>
+            </div>
+            <label class="field"><span>Country for phone numbers without a country code</span><input name="phone_region" maxlength="2" style="max-width:90px;text-transform:uppercase"><small>Two-letter code, e.g. GB</small></label>
+            <p class="hint" style="margin:0">Medal colours and the information message are set per event (Results › Edit event).</p>
+            <div class="row">
+              <input class="grow" id="sms-test-to" placeholder="Your mobile, e.g. 07…" aria-label="Test number">
+              <button class="btn" type="button" id="btn-sms-test">Send test text</button>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Results website (FTP)</legend>
+          <div class="fields">
+            <label class="check"><input type="checkbox" name="ftp_enabled"> Upload the results page automatically</label>
+            <div class="two">
+              <label class="field"><span>Protocol</span>
+                <select name="ftp_protocol"><option value="ftp">FTP</option><option value="ftps">FTPS (FTP over TLS)</option><option value="sftp">SFTP</option></select></label>
+              <label class="field"><span>Upload every (seconds)</span><input name="ftp_interval_seconds" type="number" min="30" max="86400"></label>
+            </div>
+            <div class="two">
+              <label class="field"><span>Host</span><input name="ftp_host" placeholder="ftp.example.com"></label>
+              <label class="field"><span>Port</span><input name="ftp_port" type="number" min="0" max="65535" placeholder="default"><small id="ftp-port-hint">Blank or 0 = 21</small></label>
+            </div>
+            <div class="two">
+              <label class="field"><span>Username</span><input name="ftp_user" autocomplete="off"></label>
+              <label class="field"><span>Password</span><input name="ftp_password" type="password" data-secret autocomplete="new-password">
+                <div class="secret-state" data-for="ftp_password"></div></label>
+            </div>
+            <label class="field"><span>Remote folder</span><input name="ftp_remote_dir" placeholder="/public_html/results">
+              <small>Each event's page is uploaded into this folder under its own file name, e.g. landsend2026.html. Set the name per event (Results › Edit event).</small></label>
+            <label class="check" id="ftp-passive-wrap"><input type="checkbox" name="ftp_passive"> Passive mode (normally on)</label>
+            <label class="check" id="ftp-verify-wrap"><input type="checkbox" name="ftp_verify_tls"> Check the server's TLS certificate</label>
+            <label class="field"><span>Web address of that folder (optional)</span><input name="public_url" placeholder="https://example.com/results/">
+              <small>Used to link to each event's live page, e.g. https://example.com/results/landsend2026.html</small></label>
+            <div class="row">
+              <button class="btn" type="button" id="btn-ftp-test">Test connection</button>
+              <button class="btn" type="button" id="btn-publish">Upload now</button>
+              <a class="btn" href="/preview/" target="_blank" rel="noopener" id="btn-preview">Preview page</a>
+              <a class="btn link" id="public-link" target="_blank" rel="noopener" hidden>Open live page</a>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Branding</legend>
+          <div class="fields">
+            <label class="field"><span>Timing company name</span><input name="timing_company_name"><small>Shown as “Timing by …” on the results page</small></label>
+            <div class="field">
+              <span class="small muted" style="font-weight:600">Timing company logo</span>
+              <div class="logo-box" style="margin-top:6px">
+                <img id="timing-logo" alt="Timing company logo" hidden>
+                <label class="btn file-btn">Upload logo<input type="file" id="timing-logo-file" accept="image/*"></label>
+                <button class="btn link" type="button" id="btn-timing-logo-remove" hidden>Remove</button>
+              </div>
+              <small class="hint">Resized automatically. The race organiser's logo is set per event (Results › Edit event).</small>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Security &amp; import</legend>
+          <div class="fields">
+            <div class="field">
+              <span class="small muted" style="font-weight:600">Web page password</span>
+              <p class="hint" id="password-state" style="margin:4px 0 8px"></p>
+              <div class="row">
+                <input type="password" class="grow" id="password-new" placeholder="New password" autocomplete="new-password" aria-label="New password">
+                <button class="btn" type="button" id="btn-password-set">Set password</button>
+                <button class="btn link" type="button" id="btn-password-remove" hidden>Remove</button>
+                <a class="btn link" href="/logout" id="btn-logout" hidden>Log out</a>
+              </div>
+            </div>
+            <div class="field">
+              <span class="small muted" style="font-weight:600">Import settings from the old Config.csv</span>
+              <div class="row" style="margin-top:6px"><label class="btn file-btn">Choose Config.csv<input type="file" id="legacy-import" accept=".csv,text/csv"></label></div>
+              <small class="hint">TextSend is ignored (texts always start off). RACEID can become a new event; MedalColours and the info message are applied to the current event.</small>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn primary" type="submit" id="btn-config-save-all">Save configuration</button>
+        <span class="dirty" id="settings-dirty" hidden>Unsaved changes</span>
+        <span class="spacer"></span>
+        <span class="muted small">Settings are kept on this computer and never uploaded to GitHub.</span>
+      </div>
+    </form>
+  </section>
+</main>
+
+<!-- ======================================================== DIALOGS -->
+<dialog id="dlg-confirm">
+  <form method="dialog">
+    <div class="dlg-head"><h2 id="confirm-title"></h2></div>
+    <div class="dlg-body" id="confirm-body"></div>
+    <div class="dlg-actions">
+      <button class="btn" type="button" id="confirm-cancel" data-close>Cancel</button>
+      <button class="btn primary" value="ok" id="confirm-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-prompt">
+  <form method="dialog" id="prompt-form">
+    <div class="dlg-head"><h2 id="prompt-title"></h2></div>
+    <div class="dlg-body"><label class="field"><span id="prompt-label"></span><input id="prompt-input" autocomplete="off"></label></div>
+    <div class="dlg-actions">
+      <button class="btn" type="button" data-close>Cancel</button>
+      <button class="btn primary" value="ok" id="prompt-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-event">
+  <form method="dialog" id="event-form">
+    <div class="dlg-head"><h2 id="event-dlg-title">New event</h2></div>
+    <div class="dlg-body stack">
+      <label class="field"><span>Webscorer race ID</span>
+        <div class="row"><input class="grow" name="race_id" inputmode="numeric" placeholder="e.g. 447118" required>
+          <button class="btn" type="button" id="btn-lookup">Look up</button></div>
+        <small id="lookup-result">The number at the end of the race's Webscorer address (…/race?raceid=447118)</small></label>
+      <label class="field"><span>Event name</span><input name="name" required></label>
+      <div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="field"><span>Date</span><input name="event_date" type="date"></label>
+        <label class="field"><span>Medal configuration</span><select name="medal_config_id"></select></label>
+      </div>
+      <label class="check"><input type="checkbox" name="medal_colours"> Show medal colours (finishers are only texted once they have a medal colour)</label>
+      <label class="check"><input type="checkbox" name="info_on"> Send an information text after each finisher's result text</label>
+      <label class="field" id="info-message-field"><span>Information message</span><textarea name="info_message" rows="3" placeholder="e.g. These times are based on the shorter route…"></textarea></label>
+      <label class="field"><span>Results page file name</span>
+        <input name="page_filename" placeholder="e.g. landsend2026.html" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <small id="page-name-hint">This event's page on your website, uploaded to the FTP folder under this name.</small></label>
+      <div class="field">
+        <span class="small muted" style="font-weight:600">Race organiser logo</span>
+        <div class="logo-box" style="margin-top:6px">
+          <img id="event-logo" alt="Organiser logo" hidden>
+          <label class="btn file-btn">Choose logo<input type="file" id="event-logo-file" accept="image/*"></label>
+          <button class="btn link" type="button" id="btn-event-logo-remove" hidden>Remove</button>
+          <span class="small muted" id="event-logo-name"></span>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn" type="button" data-close>Cancel</button>
+      <button class="btn primary" value="save" id="btn-event-save">Save event</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-edit">
+  <form method="dialog" id="edit-form">
+    <div class="dlg-head"><h2>Edit result · Bib <span id="edit-bib"></span></h2>
+      <p>Edits are kept for this event and re-applied every time results update from Webscorer.</p></div>
+    <div class="dlg-body">
+      <div class="edit-grid">
+        <label class="field wide"><span>Name</span><input name="name"><div class="orig" data-orig="name"></div></label>
+        <label class="field"><span>Distance</span><select name="distance"></select><div class="orig" data-orig="distance"></div></label>
+        <label class="field"><span>Category</span><select name="category"></select><div class="orig" data-orig="category"></div></label>
+        <label class="field"><span>Gender</span><select name="gender"></select><div class="orig" data-orig="gender"></div></label>
+        <p class="hint wide" id="edit-options-source" style="margin:0"></p>
+        <label class="field"><span>Time</span><input name="time" placeholder="H:MM:SS.t" class="mono"><div class="orig" data-orig="time"></div></label>
+        <label class="field wide"><span>Phone (for texts)</span><input name="phone" inputmode="tel"><div class="orig" id="edit-phone-check"></div></label>
+      </div>
+      <div class="preview-line"><span class="muted">Medal:</span> <span id="edit-medal"></span> <span class="muted small" id="edit-medal-note"></span></div>
+      <div class="notice warn" id="edit-sms-warning" style="margin-top:12px" hidden>Text messages are ON. If this changes the result, a corrected text is sent.</div>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn danger-outline" type="button" id="btn-edit-revert">Revert to Webscorer</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" data-close>Cancel</button>
+      <button class="btn primary" value="save" id="btn-edit-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='app.js') }}?v={{ version }}-{{ boot }}"></script>
+</body>
+</html>
