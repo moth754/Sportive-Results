@@ -67,7 +67,7 @@ When it finishes, it prints the address to open, for example `http://raspberrypi
 
 ## Race-day checklist
 
-- [ ] The right event is selected and **Live updates** is ticked.
+- [ ] The right event is selected and the **Live Update** switch at the top is on.
 - [ ] There's no yellow "no medal standard" warning. If there is, choose **Open medal setup** and then **Add missing combinations**.
 - [ ] The FTP status dot is green. Open the live page on your phone to check it.
 - [ ] Turn the **SMS** switch on when you're ready. The pop-up says how many texts will go straight away.

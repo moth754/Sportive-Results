@@ -356,6 +356,10 @@
     $("#btn-event-edit").disabled = !has;
     $("#btn-event-delete").disabled = !has;
     $("#polling-switch").disabled = !has;
+    const live = has && !!activeEvent().polling;
+    $("#polling-switch").checked = live;
+    $("#live-toggle").classList.toggle("on", live);
+    $("#live-label").textContent = live ? "LIVE UPDATE ON" : "LIVE UPDATE OFF";
     $("#btn-export").hidden = !has;
   }
 
@@ -364,7 +368,6 @@
     const meta = $("#event-meta");
     if (!ev) { meta.innerHTML = ""; return; }
     $("#btn-export").href = `/api/events/${ev.id}/export.csv`;
-    $("#polling-switch").checked = ev.polling;
     const bits = [
       `Webscorer race <b>${esc(ev.race_id)}</b>`,
       `Medals: <b>${ev.medal_colours ? esc(ev.medal_config_name || "no configuration!") : "off"}</b>`,
@@ -398,10 +401,14 @@
   });
 
   $("#polling-switch").addEventListener("change", async (e) => {
+    const want = e.target.checked;
+    e.target.checked = !want; // unchanged until the app confirms
+    if (!S.activeId) { toast("Create or choose an event first", "warn"); return; }
     try {
-      await api("POST", `/api/events/${S.activeId}/polling`, { on: e.target.checked });
-      toast(e.target.checked ? "Live updates on" : "Live updates paused");
+      await api("POST", `/api/events/${S.activeId}/polling`, { on: want });
+      toast(want ? "Live update ON" : "Live update OFF", want ? "ok" : "warn");
       await loadEvents();
+      await pollStatus();
     } catch (err) { fail(err); }
   });
 

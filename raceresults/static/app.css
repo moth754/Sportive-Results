@@ -49,6 +49,9 @@ a { color: var(--accent); }
 }
 .sms-toggle.on { background: #b71c1c; border-color: #ef5350; }
 .ftp-toggle.on { background: #0d47a1; border-color: #64b5f6; }
+.live-toggle.on { background: #1b5e20; border-color: #66bb6a; }
+.live-toggle .switch input:checked + .track { background: #a5d6a7; }
+.live-toggle:has(input:disabled) { opacity: .55; cursor: not-allowed; }
 .ftp-toggle .switch input:checked + .track { background: #90caf9; }
 .ftp-toggle.on .counts { color: #d6e9ff; }
 .sms-toggle .label { font-weight: 700; font-size: 13px; letter-spacing: .02em; }
@@ -136,7 +139,6 @@ label.check input { width: 16px; height: 16px; margin: 0; accent-color: var(--ac
 .event-bar select { width: auto; min-width: 220px; max-width: 100%; font-weight: 600; }
 .event-meta { width: 100%; color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .event-meta b { color: var(--text); font-weight: 600; }
-.live-toggle { margin-left: auto; }
 
 .tools { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 14px 0 10px; }
 .tools .search { flex: 1 1 280px; max-width: 460px; font-size: 15px; min-height: 40px; }
@@ -268,5 +270,4 @@ dialog form { margin: 0; display: flex; flex-direction: column; max-height: calc
   .edit-grid, fieldset .two { grid-template-columns: 1fr; }
   .count { margin-left: 0; width: 100%; }
   .event-bar select { min-width: 0; width: 100%; }
-  .live-toggle { margin-left: 0; }
 }

@@ -16,6 +16,11 @@
     <span id="hdr-event">No event selected</span>
   </div>
 
+  <label class="sms-toggle live-toggle" id="live-toggle" title="Fetch new results from Webscorer every few seconds">
+    <span class="switch"><input type="checkbox" id="polling-switch" aria-label="Live update"><span class="track"></span></span>
+    <span class="label" id="live-label">LIVE UPDATE OFF</span>
+  </label>
+
   <label class="sms-toggle" id="sms-toggle" title="Send result texts to finishers">
     <span class="switch"><input type="checkbox" id="sms-switch" aria-label="Text messages"><span class="track"></span></span>
     <span class="label" id="sms-label">SMS OFF</span>
@@ -60,9 +65,6 @@
       <button class="btn" type="button" id="btn-event-edit">Edit event</button>
       <a class="btn" id="btn-export" href="#" download>Export CSV</a>
       <button class="btn danger-outline" type="button" id="btn-event-delete">Delete</button>
-      <label class="check live-toggle" title="Fetch new results from Webscorer every few seconds">
-        <input type="checkbox" id="polling-switch"> Live updates
-      </label>
       <div class="event-meta" id="event-meta"></div>
     </div>
 
